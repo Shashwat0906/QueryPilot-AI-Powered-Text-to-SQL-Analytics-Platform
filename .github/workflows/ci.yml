@@ -38,6 +38,9 @@ jobs:
           cache-dependency-path: backend/requirements*.txt
       - run: pip install -r requirements-dev.txt
       - run: python -m pytest
+      # The tests build their own temporary database; the evaluation scripts
+      # use the default one, so create it first.
+      - run: python -m scripts.seed_database
       - run: python -m scripts.fault_injection
 
   frontend:
