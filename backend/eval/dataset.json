@@ -1,0 +1,117 @@
+{
+  "description": "QueryPilot text-to-SQL evaluation set. Each question has a hand-written, manually checked reference query; expected results are produced by running it on the seeded database (seed 42). `compare` lists the expected-result columns that must appear (by value, any column name) in the model's result; `ordered` says whether row order matters.",
+  "questions": [
+    {
+      "id": "total_revenue",
+      "question": "What is our total revenue?",
+      "reference_sql": "SELECT ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS total_revenue FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status NOT IN ('cancelled', 'refunded')",
+      "ordered": false,
+      "compare": [0],
+      "tags": ["aggregation", "join", "business-rule"]
+    },
+    {
+      "id": "top5_products_revenue",
+      "question": "Which five products generated the highest revenue?",
+      "reference_sql": "SELECT p.name, ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS revenue FROM order_items oi JOIN products p ON p.product_id = oi.product_id JOIN orders o ON o.order_id = oi.order_id WHERE o.status NOT IN ('cancelled', 'refunded') GROUP BY p.product_id, p.name ORDER BY revenue DESC LIMIT 5",
+      "ordered": true,
+      "compare": [0, 1],
+      "tags": ["ranking", "join"]
+    },
+    {
+      "id": "top5_customers_orders",
+      "question": "Show the customer IDs and names of the five customers who placed the most orders, with their order counts.",
+      "reference_sql": "SELECT c.customer_id, c.first_name || ' ' || c.last_name AS customer, COUNT(o.order_id) AS order_count FROM customers c JOIN orders o ON o.customer_id = c.customer_id GROUP BY c.customer_id ORDER BY order_count DESC LIMIT 5",
+      "ordered": true,
+      "compare": [0, 2],
+      "tags": ["ranking", "count"]
+    },
+    {
+      "id": "monthly_revenue_6m",
+      "question": "What was our monthly revenue over the last six months?",
+      "reference_sql": "SELECT strftime('%Y-%m', o.order_date) AS month, ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS revenue FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status NOT IN ('cancelled', 'refunded') AND o.order_date >= '2026-04-01' GROUP BY month ORDER BY month",
+      "ordered": true,
+      "compare": [0, 1],
+      "tags": ["time-series", "relative-date"]
+    },
+    {
+      "id": "category_revenue",
+      "question": "Which product categories perform best by revenue?",
+      "reference_sql": "SELECT p.category, ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS revenue FROM order_items oi JOIN products p ON p.product_id = oi.product_id JOIN orders o ON o.order_id = oi.order_id WHERE o.status NOT IN ('cancelled', 'refunded') GROUP BY p.category ORDER BY revenue DESC",
+      "ordered": true,
+      "compare": [0, 1],
+      "tags": ["grouping", "ranking"]
+    },
+    {
+      "id": "average_order_value",
+      "question": "What is the average order value?",
+      "reference_sql": "SELECT ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) / COUNT(DISTINCT o.order_id), 2) AS average_order_value FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status NOT IN ('cancelled', 'refunded')",
+      "ordered": false,
+      "compare": [0],
+      "tags": ["aggregation", "business-rule"]
+    },
+    {
+      "id": "never_ordered",
+      "question": "Which products have never been ordered?",
+      "reference_sql": "SELECT p.name FROM products p WHERE NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.product_id)",
+      "ordered": false,
+      "compare": [0],
+      "tags": ["anti-join"]
+    },
+    {
+      "id": "customers_per_country",
+      "question": "How many customers do we have in each country?",
+      "reference_sql": "SELECT country, COUNT(*) AS customers FROM customers GROUP BY country",
+      "ordered": false,
+      "compare": [0, 1],
+      "tags": ["grouping"]
+    },
+    {
+      "id": "cancelled_orders",
+      "question": "How many orders were cancelled?",
+      "reference_sql": "SELECT COUNT(*) AS cancelled_orders FROM orders WHERE status = 'cancelled'",
+      "ordered": false,
+      "compare": [0],
+      "tags": ["filter", "categorical-value"]
+    },
+    {
+      "id": "payment_method_2026",
+      "question": "What was the revenue for each payment method in 2026?",
+      "reference_sql": "SELECT o.payment_method, ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS revenue FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status NOT IN ('cancelled', 'refunded') AND o.order_date BETWEEN '2026-01-01' AND '2026-12-31' GROUP BY o.payment_method",
+      "ordered": false,
+      "compare": [0, 1],
+      "tags": ["date-filter", "grouping"]
+    },
+    {
+      "id": "top_segment",
+      "question": "Which customer segment generated the most revenue?",
+      "reference_sql": "SELECT c.segment FROM customers c JOIN orders o ON o.customer_id = c.customer_id JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status NOT IN ('cancelled', 'refunded') GROUP BY c.segment ORDER BY SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) DESC LIMIT 1",
+      "ordered": false,
+      "compare": [0],
+      "tags": ["three-table-join", "superlative"]
+    },
+    {
+      "id": "units_by_category_completed",
+      "question": "How many units of each product category were sold in completed orders?",
+      "reference_sql": "SELECT p.category, SUM(oi.quantity) AS units FROM order_items oi JOIN products p ON p.product_id = oi.product_id JOIN orders o ON o.order_id = oi.order_id WHERE o.status = 'completed' GROUP BY p.category",
+      "ordered": false,
+      "compare": [0, 1],
+      "tags": ["grouping", "filter"]
+    },
+    {
+      "id": "top2_cities",
+      "question": "Which two cities have the most customers?",
+      "reference_sql": "SELECT city, COUNT(*) AS customers FROM customers GROUP BY city ORDER BY customers DESC LIMIT 2",
+      "ordered": true,
+      "compare": [0],
+      "tags": ["ranking"]
+    },
+    {
+      "id": "segment_orders_2026",
+      "question": "How many orders did each customer segment place in 2026?",
+      "reference_sql": "SELECT c.segment, COUNT(o.order_id) AS orders FROM customers c JOIN orders o ON o.customer_id = c.customer_id WHERE o.order_date >= '2026-01-01' AND o.order_date < '2027-01-01' GROUP BY c.segment",
+      "ordered": false,
+      "compare": [0, 1],
+      "tags": ["date-filter", "join"]
+    }
+  ]
+}

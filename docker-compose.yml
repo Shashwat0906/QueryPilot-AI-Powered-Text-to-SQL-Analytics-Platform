@@ -1,0 +1,28 @@
+# Run everything locally:   docker compose up --build
+# Then open http://localhost:8080   (API docs: http://localhost:8000/docs)
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "127.0.0.1:8000:8000"   # API/Swagger on this machine only
+    env_file:
+      - path: ./backend/.env
+        required: false   # works without a key (offline mock provider)
+    environment:
+      CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+      CLIENT_IP_HEADER: X-Forwarded-For   # set (not appended) by our nginx
+    volumes:
+      - querypilot-data:/app/data   # sample DB + request history survive restarts
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  querypilot-data:

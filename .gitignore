@@ -1,0 +1,29 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Generated data (recreate with `python -m scripts.seed_database`)
+backend/data/
+
+# Evaluation runs (keep the committed sample)
+backend/eval/results/*
+!backend/eval/results/mock-sample.md
+!backend/eval/results/fault-injection.md
+
+# Node
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

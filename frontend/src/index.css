@@ -1,0 +1,88 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/instrument-sans';
+@import '@fontsource-variable/jetbrains-mono';
+
+/*
+  QueryPilot design tokens - "night cockpit".
+  Navy instrument-panel surfaces, amber readouts for the primary accent,
+  teal/sky for data, green/rose reserved for success/failure meaning.
+*/
+@theme {
+  --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --color-night: #0e1622;
+  --color-panel: #152131;
+  --color-raised: #1c2b3e;
+  --color-line: #26384f;
+  --color-line-strong: #34496a;
+  --color-ink: #e6ecf3;
+  --color-muted: #8a9bb0;
+  --color-faint: #5d6f87;
+
+  --color-amber: #f2b544;
+  --color-amber-soft: #f2b5441f;
+  --color-teal: #4fc3b5;
+  --color-sky: #6ea8fe;
+  --color-ok: #5bd08a;
+  --color-bad: #f07a8a;
+  --color-warn: #f0a35b;
+
+  --text-2xs: 0.6875rem;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-night font-sans text-ink antialiased;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-amber);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  ::selection {
+    background: #f2b54455;
+  }
+  * {
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* SQL syntax colours (see utils/sqlHighlight.ts) */
+.sql-keyword { color: #f2b544; }
+.sql-function { color: #6ea8fe; }
+.sql-string { color: #4fc3b5; }
+.sql-number { color: #d9a7f5; }
+.sql-comment { color: #5d6f87; font-style: italic; }
+.sql-operator { color: #8a9bb0; }
+
+/* The one orchestrated motion: the pipeline trace lights up stage by stage. */
+@keyframes trace-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.trace-step {
+  animation: trace-in 260ms ease-out both;
+}
+
+/* Show SQL operators exactly as typed (no >= -> ≥ ligatures). */
+code,
+pre,
+.font-mono {
+  font-variant-ligatures: none;
+  font-feature-settings: 'calt' 0, 'liga' 0;
+}

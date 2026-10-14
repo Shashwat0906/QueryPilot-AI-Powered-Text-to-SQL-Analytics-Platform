@@ -1,0 +1,69 @@
+# Render Blueprint for the QueryPilot API + its history database.
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repository.
+# Full guide (accounts, costs, verification): docs/deployment.md
+#
+# Defaults are the FREE plans. Free web services sleep after 15 idle minutes
+# (~1 minute to wake), and free Postgres expires 30 days after creation.
+# Paid options are in docs/deployment.md.
+
+services:
+  - type: web
+    name: querypilot-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free                 # "0.5c-512mb" = Starter, no sleeping (paid)
+    region: singapore          # closest Render region to India; can't be changed later
+    healthCheckPath: /api/health
+    autoDeployTrigger: checksPass   # deploy only after GitHub Actions CI passes
+    buildFilter:
+      paths:
+        - backend/**
+        - render.yaml
+      ignoredPaths:
+        - backend/tests/**
+        - backend/eval/results/**
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      # --- LLM -------------------------------------------------------------
+      - key: ANTHROPIC_API_KEY
+        sync: false            # entered in the dashboard; never committed
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-5-5
+      - key: LLM_PROVIDER
+        value: auto            # falls back to the offline mock if no key is set
+      # --- Spend protection (all visitors combined, resets 00:00 UTC) -------
+      - key: DAILY_LLM_REQUEST_LIMIT
+        value: "100"
+      - key: DAILY_COST_LIMIT_USD
+        value: "1.00"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "10"
+      # --- Browser access ------------------------------------------------------
+      - key: CORS_ORIGINS
+        sync: false            # e.g. https://querypilot.vercel.app (no trailing slash)
+      - key: HISTORY_SCOPE
+        value: client          # each visitor sees only their own history
+      # Empty = rate-limit by connecting address. See docs/deployment.md step 6
+      # before setting a header name here.
+      - key: CLIENT_IP_HEADER
+        value: ""
+      # --- Databases -----------------------------------------------------------
+      # Business data: rebuilt read-only inside the container on every start.
+      - key: DATABASE_URL
+        value: sqlite:////app/data/business.db
+      # History + analytics: persisted in Render Postgres.
+      - key: METADATA_DATABASE_URL
+        fromDatabase:
+          name: querypilot-db
+          property: connectionString
+
+databases:
+  - name: querypilot-db
+    plan: free                 # expires after 30 days; "0.1c-256mb" = smallest paid
+    region: singapore          # must match the web service region
+    databaseName: querypilot
+    user: querypilot
+    postgresMajorVersion: "17"
+    ipAllowList: []            # private network only - no public access
